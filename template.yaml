@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "A template for learning and security groups"
+Parameters:
+  ParamAuthorName:
+    Type: String
+  ParamAllowSSHFromRange:
+    Type: String
+    Description: "IP Cidrblock to allow SSH access from"
+    Default: '0.0.0.0/0'
+  ParamAllowSSHAccess:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Default: 'true'
+    ConstraintDescription: 'Please select true or false for SSH access'
+Conditions:
+  AllowSSHAccess:
+    Fn::Equals: [!Ref ParamAllowSSHAccess, 'true']
+Metadata:
+  Author:
+    Description: !Ref ParamAuthorName
+Resources:
+  SecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "Security group for SSH and HTTP access"
+      GroupName: "TheSecurityGroup"
+      SecurityGroupIngress:
+        - IpProtocol: 'tcp'
+          FromPort: 80
+          ToPort: 80
+          CidrIp: '0.0.0.0/0'
+        - !If
+          - AllowSSHAccess
+          - IpProtocol: 'tcp'
+            FromPort: 22
+            ToPort: 22
+            CidrIp: !Ref ParamAllowSSHFromRange
+          - !Ref 'AWS::NoValue'
+Outputs:
+  SecurityGroupName:
+    Description: 'name of the security group'
+    Value: !Ref SecurityGroup
+  SecurityGroupId:
+    Description: 'ID of the security group'
+    Value: !GetAtt SecurityGroup.GroupId
+    Export:
+      Name: !Sub '${AWS::StackName}-SecurityGroupId'
